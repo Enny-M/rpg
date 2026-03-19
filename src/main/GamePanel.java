@@ -1,7 +1,7 @@
 package main;
 
 import Entity.Player;
-import Tile.SceneryManager;
+import Map.SceneryManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -66,9 +66,9 @@ public class GamePanel extends JPanel implements Runnable {
     super.paintComponent(graphic);
 
     Graphics2D g2D = (Graphics2D) graphic;
-    background.draw(g2D, mc); // first layer
+    background.draw(g2D, mc, true); // true == background layers
     mc.draw(g2D);
-
+    background.draw(g2D, mc, false); // false == foreground layers
     g2D.dispose();
   }
 }
