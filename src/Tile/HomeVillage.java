@@ -9,21 +9,23 @@ import java.io.*;
 public class HomeVillage extends Map {
   Integer[][] layer_0;
   String location = "res/maps/home_village_";
-  String format = ".txt";
+  String format = ".csv";
   Integer[][] layer_1;
   Integer[][] layer_2;
-  int numberLayers = 3;
+  Integer[][] layer_3;
+  int numberLayers = 4;
 
   HomeVillage(GamePanel gp) {
     panel = gp;
     numberTiles = 689;
-    maxMapCol = 20;
+    maxMapCol = 50;
     maxMapRow = 20;
     tile = new Tiles[numberTiles];
     loadImages();
     layer_0 = new Integer[maxMapCol][maxMapRow];
     layer_1 = new Integer[maxMapCol][maxMapRow];
     layer_2 = new Integer[maxMapCol][maxMapRow];
+    layer_3 = new Integer[maxMapCol][maxMapRow];
     loadLayers();
   }
 
@@ -44,27 +46,26 @@ public class HomeVillage extends Map {
   }
 
   private void loadLayers() {
-    try {
-      for (int i = 0; i < numberLayers; i++) {
-        InputStream is = new FileInputStream(location + i + format);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-
+    for (int i = 0; i < numberLayers; i++) {
+      try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(location + i + format)))) {
         for (int row = 0; row < maxMapRow; row++) {
           String line = reader.readLine();
           String[] numbers = line.split(" ");
 
+          System.out.println(row +" "+ numbers.length);
           for (int column = 0; column < maxMapCol; column++) {
             switch (i) {
               case 0 -> layer_0[column][row] = Integer.parseInt(numbers[column]);
               case 1 -> layer_1[column][row] = Integer.parseInt(numbers[column]);
               case 2 -> layer_2[column][row] = Integer.parseInt(numbers[column]);
+              case 3 -> layer_3[column][row] = Integer.parseInt(numbers[column]);
             }
           }
         }
-        reader.close();
+      } catch (Exception e) {
+        e.printStackTrace();
+        System.out.println("Reading map file failed: " + location + i + format);
       }
-    } catch (Exception e) {
-      System.out.println("reading map files for HomeVillage failed");
     }
   }
 
@@ -76,8 +77,9 @@ public class HomeVillage extends Map {
         case 0 -> tileNumber = layer_0[worldTileX][worldTileY];
         case 1 -> tileNumber = layer_1[worldTileX][worldTileY];
         case 2 -> tileNumber = layer_2[worldTileX][worldTileY];
+        case 3 -> tileNumber = layer_3[worldTileX][worldTileY];
       }
-
+      if (tileNumber == 0) continue;
       g2D.drawImage(tile[tileNumber].image, screenX, screenY, panel.tileSize, panel.tileSize, null);
     }
   }

@@ -29,9 +29,9 @@ public class Player extends Entity {
   }
 
   private void setDefaultValues() {
-    worldX = 100;
-    worldY = 100;
-    speed = 3;
+    worldX = panel.tileSize * 20;
+    worldY = panel.tileSize * 10;
+    speed = 8; //3
     spriteNumberWalking = 8;
     spriteNumberIdle = 3;
     direction = "down";
