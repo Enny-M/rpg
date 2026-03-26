@@ -1,6 +1,7 @@
 package Entity;
 
 import main.GamePanel;
+import main.GameSettings;
 import main.KeyHandler;
 
 import javax.imageio.ImageIO;
@@ -10,7 +11,6 @@ import java.io.File;
 import java.io.IOException;
 
 public class Player extends Entity {
-  GamePanel panel;
   KeyHandler keyHandler;
   boolean keyPressed = false;
 
@@ -21,22 +21,34 @@ public class Player extends Entity {
     panel = gp;
     keyHandler = kh;
 
-    screenX = panel.screenWidth / 2 - (gp.tileSize / 2);
-    screenY = panel.screenHeight / 2 - (gp.tileSize / 2);
+    screenX = GameSettings.screenWidth / 2 - (GameSettings.tileSize / 2);
+    screenY = GameSettings.screenHeight / 2 - (GameSettings.tileSize / 2);
 
-    setDefaultValues();
+    solidArea = new Rectangle();
+    solidArea.x = 11 * GameSettings.scale;
+    solidArea.y = 22 * GameSettings.scale;
+    solidArea.width = 10 * GameSettings.scale;
+    solidArea.height = 10 * GameSettings.scale;
+
+    spriteNumberWalking = 8;
+    spriteNumberIdle = 3;
+    walkingAnimation = new BufferedImage[4][spriteNumberWalking];
+    idleAnimation = new BufferedImage[4][spriteNumberIdle];
+
+    setValues();
     loadImages();
   }
 
-  private void setDefaultValues() {
-    worldX = panel.tileSize * 10;
-    worldY = panel.tileSize * 30;
-    speed = 8; //3
-    spriteNumberWalking = 8;
-    spriteNumberIdle = 3;
+  private void setValues() { // can be altered when actually having a save function
+    worldX = GameSettings.tileSize * 45;
+    worldY = GameSettings.tileSize * 5;
+    if(GameSettings.debug){
+      speed = 10;
+    }
+    else{
+      speed = 3;
+    }
     direction = "down";
-    walkingAnimation = new BufferedImage[4][spriteNumberWalking];
-    idleAnimation = new BufferedImage[4][spriteNumberIdle];
   }
 
   private void loadImages() {
@@ -77,71 +89,102 @@ public class Player extends Entity {
   }
 
   public void update() {
-    double dx = 0;
-    double dy = 0;
-
-    if (keyHandler.upPressed) dy -= 1;
-    if (keyHandler.downPressed) dy += 1;
-    if (keyHandler.leftPressed) dx -= 1;
-    if (keyHandler.rightPressed) dx += 1;
-
-    // normalize movement
-    if (dx != 0 || dy != 0) {
-      keyPressed = true;
-      double length = Math.sqrt(dx * dx + dy * dy);
-      dx /= length;
-      dy /= length;
+    double dDx = 0; // double dx == dDx
+    double dDy = 0; // double dy == dDy
+    keyPressed = false;
+    if (keyHandler.upPressed && keyHandler.downPressed) {
+      // do nothing
+    } else {
+      if (keyHandler.upPressed) {
+        dDy -= 1;
+        keyPressed = true;
+        direction = "up";
+      }
+      if (keyHandler.downPressed) {
+        dDy += 1;
+        keyPressed = true;
+        direction = "down";
+      }
     }
-
-    worldX += (dx < 0) ? Math.ceil(dx * speed) : Math.floor(dx * speed);
-    worldY += (dy < 0) ? Math.ceil(dy * speed) : Math.floor(dy * speed);
-
-    // direction is always left or right when A or D are pressed -> yet no animation for 8
-    // directions
-    if (Math.abs(dx) > 0) {
-      if (dx > 0) {
-        direction = "right";
-      } else {
+    if (keyHandler.leftPressed && keyHandler.rightPressed) {
+      // do nothing
+    } else {
+      if (keyHandler.leftPressed) {
+        dDx -= 1;
+        keyPressed = true;
         direction = "left";
       }
-    } else {
-      if (dy > 0) {
-        direction = "down";
-      } else {
-        direction = "up";
+      if (keyHandler.rightPressed) {
+        dDx += 1;
+        keyPressed = true;
+        direction = "right";
+      }
+    }
+    // normalize movement
+    if (keyPressed) {
+      double length = Math.sqrt(dDx * dDx + dDy * dDy);
+      dDx /= length;
+      dDy /= length;
+    }
+
+    int dx = (int) ((dDx < 0) ? Math.ceil(dDx * speed) : Math.floor(dDx * speed));
+    int dy = (int) ((dDy < 0) ? Math.ceil(dDy * speed) : Math.floor(dDy * speed));
+    int dirX = (dx != 0)? dx/Math.abs(dx) : 0;
+    int dirY = (dy != 0)? dy/Math.abs(dy) : 0;
+    // move dx
+    for (int i = 0; i < dirX * dx; i++) {
+      if (!super.collisionAt(dirX, 0)) {
+        worldX += dirX;
+      }
+    }
+    // move dy
+    for (int i = 0; i < dirY * dy; i++) {
+      if (!super.collisionAt(0, dirY)) {
+        worldY += dirY;
       }
     }
   }
 
   public void draw(Graphics2D g2D) {
-    BufferedImage image = null;
-
     if (keyPressed) { // if player should walk
       currentSpriteNumberIdle = 0; // reset idle animation;
-      switch (direction) {
-        case "up" -> image = walkingAnimation[0][currentSpriteNumberWalking];
-        case "down" -> image = walkingAnimation[1][currentSpriteNumberWalking];
-        case "left" -> image = walkingAnimation[2][currentSpriteNumberWalking];
-        case "right" -> image = walkingAnimation[3][currentSpriteNumberWalking];
-      }
+      drawWalking(g2D, currentSpriteNumberWalking);
     } else {
       currentSpriteNumberWalking = 0;
-      switch (direction) {
-        case "up" -> image = idleAnimation[0][currentSpriteNumberIdle];
-        case "down" -> image = idleAnimation[1][currentSpriteNumberIdle];
-        case "left" -> image = idleAnimation[2][currentSpriteNumberIdle];
-        case "right" -> image = idleAnimation[3][currentSpriteNumberIdle];
-      }
+      drawIdle(g2D, currentSpriteNumberIdle);
     }
-    spriteCounter++;
-    if (spriteCounter > 30) {
+    spriteTimeCounterCounter++;
+    if (spriteTimeCounterCounter > 10) {
       if (keyPressed) {
         currentSpriteNumberWalking = (currentSpriteNumberWalking + 1) % spriteNumberWalking;
       } else {
         currentSpriteNumberIdle = (currentSpriteNumberIdle + 1) % spriteNumberIdle;
       }
-      spriteCounter = 0;
+      spriteTimeCounterCounter = 0;
     }
-    g2D.drawImage(image, screenX, screenY, panel.tileSize, panel.tileSize, null);
+  }
+
+  private void drawIdle(Graphics2D g2D, int currentSpriteNumber) {
+    BufferedImage image =
+        switch (direction) {
+          case "up" -> idleAnimation[0][currentSpriteNumber];
+          case "down" -> idleAnimation[1][currentSpriteNumber];
+          case "left" -> idleAnimation[2][currentSpriteNumber];
+          case "right" -> idleAnimation[3][currentSpriteNumber];
+          default -> null;
+        };
+    g2D.drawImage(image, screenX, screenY, GameSettings.tileSize, GameSettings.tileSize, null);
+  }
+
+  private void drawWalking(Graphics2D g2D, int currentSpriteNumber) {
+    BufferedImage image =
+        switch (direction) {
+          case "up" -> walkingAnimation[0][currentSpriteNumber];
+          case "down" -> walkingAnimation[1][currentSpriteNumber];
+          case "left" -> walkingAnimation[2][currentSpriteNumber];
+          case "right" -> walkingAnimation[3][currentSpriteNumber];
+          default -> null;
+        };
+    g2D.drawImage(image, screenX, screenY, GameSettings.tileSize, GameSettings.tileSize, null);
   }
 }

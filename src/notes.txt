@@ -1,0 +1,7 @@
+- eigentlich ist middleground kein eigener funktionsaufruf
+-> muss jeweils im foreground bzw background behandelt werden
+- collisions müssen angezeigt werden in maps und in tileset gemalt werden
+- häuser malen
+- middleground trennen
+- Prüft map collision? oder eher entity?
+- nur die obersten collision anzeigen? die nicht null sind aber nur wenn beide collisions haben? oder auch so
